@@ -16,26 +16,28 @@ else
     token_type="${trans_type}"
 fi
 
-train_set="train"
+train_set="train_clean_100"
 valid_set="dev"
-test_sets="test"
+test_sets="test_clean test_other dev_clean dev_other"
 
-# model=hb_v51
-# model=hubert
-# model=contentvec
+
 model=$1
 version=$2
-uasr_exp=exp/uasr_${model}_v${version}
-uasr_stats_dir=exp/uasr_stats_${model}
 
-# uasr_config=conf/train_uasr.yaml
-uasr_config=conf/train_$model.yaml
+exp_dir=exp2
+uasr_exp=${exp_dir}/uasr_${model}_v${version}
+uasr_stats_dir=${exp_dir}/uasr_stats_${model}
+dump_dir=dump/${model}
+
+uasr_config=conf/train_${model}.yaml
 lm_config=conf/tuning/train_lm_transformer2.yaml
 inference_config=conf/decode_uasr.yaml
 
 echo "===== Model: $model , Version: $version ====="
 
-# 2nd run starts from 13 -> 15
+# 2nd run starts from 13
+# 3nd run starts from 15
+
 # 13: collect stats
 # 14: Feature Preprocess
 # 15: UASR Training
@@ -50,7 +52,7 @@ echo "768" > ${uasr_stats_dir}/train/feats_dim
 echo "768" > ${uasr_stats_dir}/valid/feats_dim
 
 ./uasr.sh \
-    --stage 15 \
+    --stage 13 \
     --lang en \
     --token_type "${token_type}" \
     --ngpu 1 \
@@ -59,20 +61,23 @@ echo "768" > ${uasr_stats_dir}/valid/feats_dim
     --use_lm false \
     --use_feature_clustering false \
     --write_collected_feats true \
-    --audio_format "wav" \
+    --audio_format "flac.ark" \
     --max_wav_duration 30 \
     --use_ngram true \
+    --dumpdir "${dump_dir}" \
+    --expdir "${exp_dir}" \
     --uasr_exp "${uasr_exp}" \
     --uasr_stats_dir "${uasr_stats_dir}" \
     --uasr_config "${uasr_config}" \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \
     --valid_set "${valid_set}" \
-    --test_sets "${test_sets}"
+    --test_sets "${test_sets}" \
+    --uasr_args "--use_wandb true --wandb_project upr --wandb_name ${model}_v${version}"
+    # --inference_uasr_model "valid.weighted_lm_ppl.ave_10best.pth"
     # --nlsyms_txt "<SIL>"
     # "$@"
     # --lm_config "${lm_config}" \
     # --feature_pca_dim 384 \
-
 
 echo "===== Model: $model ====="

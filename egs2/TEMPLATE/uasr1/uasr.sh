@@ -1417,7 +1417,14 @@ if ! "${skip_eval}"; then
         for dset in ${test_sets}; do
             _data="${data_feats}/${dset}"
             _scp=wav.scp
-            _type=sound
+
+            if [[ "${audio_format}" == *ark* ]]; then
+                _type=kaldi_ark
+            else
+                # "sound" supports "wav", "flac", etc.
+                _type=sound
+            fi
+            # _type=sound
 
             ${cuda_cmd} --gpu "${ngpu}" "${_logdir}/extract_feature_${dset}.log" \
                 ${python} -m espnet2.bin.uasr_extract_feature \
@@ -1629,6 +1636,13 @@ if ! "${skip_eval}"; then
                                 ) \
                     <(<"${_data}/utt2spk" awk '{ print "(" $2 "-" $1 ")" }') \
                         >"${_scoredir}/hyp.trn"
+
+                # TODO: ======================
+                cp "${_scoredir}/hyp.trn" "${_scoredir}/hyp.trn.tmp"
+                ${python} local/text_proc.py \
+                    "${_scoredir}/hyp.trn.tmp" \
+                    "${_scoredir}/hyp.trn"
+                # TODO: ======================
 
                 sclite \
                     ${score_opts} \
